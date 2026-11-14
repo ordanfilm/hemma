@@ -1,12 +1,17 @@
 {
-  "name": "Hemma",
-  "short_name": "Hemma",
+  "name": "Rutiner",
+  "short_name": "Rutiner",
+  "description": "Delade rutiner för Adrian och Kemal",
+  "lang": "sv",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f2f4f3",
-  "theme_color": "#119c72",
+  "orientation": "portrait",
+  "background_color": "#0d0e12",
+  "theme_color": "#0d0e12",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
   ]
 }
