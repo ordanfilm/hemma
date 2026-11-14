@@ -3,7 +3,6 @@
   "short_name": "Rutiner",
   "description": "Delade rutiner för Adrian och Kemal",
   "lang": "sv",
-  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

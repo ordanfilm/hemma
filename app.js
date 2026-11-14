@@ -181,15 +181,37 @@ async function sha(s) {
 }
 const pinHash = (who, pin) => sha(`rutiner:${KEY}:${who}:${pin}`);
 
+// Nyckeln ligger kvar i adressen (#…) så att "Lägg till på hemskärmen" tar med den.
+// På iPhone har hemskärmsappen eget minne, därför går det också att klistra in länken.
+function parseKey(text) {
+  const t = String(text || "").trim(); if (!t) return "";
+  const k = t.includes("#") ? t.split("#").pop() : t;
+  return decodeURIComponent(k).trim().replace(/[^A-Za-z0-9_-]/g, "");
+}
 function getKey() {
-  const h = decodeURIComponent(location.hash.slice(1));
-  if (h) { ls.set("rut.key", h); history.replaceState(null, "", location.pathname + location.search); return h }
-  return ls.get("rut.key", ls.get("hemma.key", ""));
+  const h = parseKey(location.hash.slice(1));
+  if (h) { ls.set("rut.key", h); return h }
+  const saved = ls.get("rut.key", ls.get("hemma.key", ""));
+  if (saved) { try { history.replaceState(null, "", location.pathname + location.search + "#" + saved) } catch (e) { } }
+  return saved;
+}
+function drawKeyEntry(err) {
+  $("#app").innerHTML = `<div class="login fade"><div class="logo">${IC.logo}</div><h1>Öppna appen</h1>
+    <p>Klistra in länken du fick av Adrian. Det behövs bara en gång.</p>
+    <input class="in" id="keyIn" placeholder="Klistra in länken här" autocomplete="off" autocapitalize="off" spellcheck="false" style="text-align:center">
+    ${err ? `<p class="err">${esc(err)}</p>` : ""}
+    <button class="btn pri full tap" id="keyGo">Fortsätt</button></div>`;
+  const go = () => {
+    const k = parseKey($("#keyIn").value);
+    if (k.length < 12) return drawKeyEntry("Det där ser inte ut som hela länken. Kopiera hela länken och försök igen.");
+    ls.set("rut.key", k); location.hash = k; location.reload();
+  };
+  $("#keyGo").onclick = go; $("#keyIn").onkeydown = e => { if (e.key === "Enter") go() };
 }
 
 async function boot() {
   KEY = getKey();
-  if (!KEY) return renderMessage("Öppna appen via länken", "Du behöver den personliga länken du fick av Adrian. Öppna den en gång, sedan kommer appen ihåg den.");
+  if (!KEY) return drawKeyEntry();
   if (!window.firebase) return renderMessage("Ingen anslutning", "Kunde inte ladda appen. Kolla uppkopplingen och ladda om sidan.");
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
@@ -199,7 +221,7 @@ async function boot() {
     base = fs.collection("hem").doc(KEY);
   } catch (e) { console.error(e); return renderMessage("Något gick fel", "Kunde inte starta databasen.") }
 
-  const onErr = e => { console.error(e); renderMessage(e.code === "permission-denied" ? "Fel länk" : "Kunde inte hämta data", e.code === "permission-denied" ? "Länken verkar inte stämma. Öppna länken du fick av Adrian igen." : "Ladda om sidan och försök igen.") };
+  const onErr = e => { console.error(e); if (e.code === "permission-denied") { ls.set("rut.key", null); return drawKeyEntry("Länken stämmer inte. Klistra in hela länken du fick av Adrian.") } renderMessage("Kunde inte hämta data", "Kolla uppkopplingen och ladda om sidan.") };
   const since = addDays(today, -CHECK_DAYS);
   col("users").onSnapshot(s => { users = {}; s.docs.forEach(d => users[d.id] = d.data()); loaded.users = true; render() }, onErr);
   col("routines").onSnapshot(s => { routines = s.docs.map(d => ({ id: d.id, ...d.data() })); loaded.routines = true; maybeSeed(); render() }, onErr);
